@@ -4,7 +4,7 @@ train_prices.db
 
 .scraping.py
 
-
+#frontend
 # dependencies
 train-price-frontend/node_modules
 train-price-frontend/.pnp

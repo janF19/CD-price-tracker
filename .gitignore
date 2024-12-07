@@ -1,8 +1,8 @@
 .env
 
 train_prices.db
-
- backend/__pycache__/
+__pycache__/
+backend/__pycache__/
 
 backend/scraping.py
 

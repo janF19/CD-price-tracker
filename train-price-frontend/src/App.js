@@ -19,10 +19,10 @@ const TrainPriceHistoryChart = () => {
       
       try {
         // Fetch unique trains first
-        const trainsResponse = await axios.get('https://cd-price-tracker.onrender.com');
+        const trainsResponse = await axios.get('https://cd-price-tracker.onrender.com/unique-trains');
         
         // Fetch full price history
-        const priceHistoryResponse = await axios.get('https://cd-price-tracker.onrender.com');
+        const priceHistoryResponse = await axios.get('https://cd-price-tracker.onrender.com/full-price-history');
         
         // Group data by train
         const groupedData = priceHistoryResponse.data.reduce((acc, entry) => {

@@ -1,10 +1,10 @@
-
+.env
 
 train_prices.db
 
- __pycache__/
+ backend/__pycache__/
 
-scraping.py
+backend/scraping.py
 
 #frontend
 # dependencies

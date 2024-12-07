@@ -23,3 +23,7 @@ conclusion
 
 
 
+stuck here cannot connect to postgres db from local
+
+
+

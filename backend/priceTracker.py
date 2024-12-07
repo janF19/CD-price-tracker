@@ -12,11 +12,49 @@ import uvicorn
 from scrape import automate_train_search  # Your existing scraper
 from apscheduler.schedulers.blocking import BlockingScheduler
 from threading import Thread
+from dotenv import load_dotenv
+import psycopg2
+import traceback
+import os
+import psycopg2
+from urllib.parse import urlparse, quote_plus
+from sqlalchemy.exc import SQLAlchemyError
+from urllib.parse import quote_plus
 
-# SQLAlchemy setup
+
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# Get the DATABASE_URL
+# Manually parse the DATABASE_URL
+
+
+# Load environment variables
+load_dotenv()
+
+# Database connection URL
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+# Create Base and engine
 Base = declarative_base()
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./train_prices.db')
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    connect_args={'options': '-c client_encoding=utf8'}
+)
 
+# Create SessionLocal 
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine,
+    expire_on_commit=False
+)
+
+# Define SQLAlchemy Model
 class TrainConnection(Base):
     __tablename__ = "train_connections"
     
@@ -39,10 +77,8 @@ class TrainConnectionResponse(BaseModel):
     class Config:
         orm_mode = True
 
-# Database engine and session
-engine = create_engine(DATABASE_URL)
+# Create tables
 Base.metadata.create_all(bind=engine)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Dependency to get database session
 def get_db():
@@ -55,12 +91,10 @@ def get_db():
 # FastAPI application
 app = FastAPI(title="Train Price Tracker API")
 
-
-
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,11 +161,6 @@ def start_scheduler_thread():
 @app.on_event("startup")
 async def startup_event():
     start_scheduler_thread()
-    
-    
-    
-    
-    
 
 @app.get("/train-prices", response_model=List[TrainConnectionResponse])
 def get_train_prices(
@@ -142,11 +171,6 @@ def get_train_prices(
 ):
     """
     Retrieve train prices with optional filtering
-    
-    Parameters:
-    - train_code: Filter by specific train code
-    - start_date: Filter prices from this date
-    - end_date: Filter prices up to this date
     """
     query = db.query(TrainConnection)
     
@@ -161,93 +185,53 @@ def get_train_prices(
     
     return query.order_by(TrainConnection.scrape_timestamp).all()
 
-
-
 @app.get("/price-history/{train_code}", response_model=List[TrainConnectionResponse])
 def get_price_history_for_train(train_code: str, db: Session = Depends(get_db)):
     """
-    Get complete price history for a specific train with comprehensive error handling
+    Get complete price history for a specific train
     """
-    try:
-        price_history = db.query(TrainConnection)\
-            .filter(TrainConnection.train_code == train_code)\
-            .order_by(TrainConnection.scrape_timestamp)\
-            .all()
-        
-        print(f"Price history for {train_code}: {len(price_history)} entries")  # Debug print
-        
-        if not price_history:
-            raise HTTPException(status_code=404, detail=f"No price history found for train {train_code}")
-        
-        return price_history
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching price history for {train_code}: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    price_history = db.query(TrainConnection)\
+        .filter(TrainConnection.train_code == train_code)\
+        .order_by(TrainConnection.scrape_timestamp)\
+        .all()
     
+    if not price_history:
+        raise HTTPException(status_code=404, detail=f"No price history found for train {train_code}")
     
-    
-    
+    return price_history
 
 @app.get("/unique-trains", response_model=List[str])
 def get_unique_trains(db: Session = Depends(get_db)):
     """
-    Get list of unique train codes with error handling and logging
+    Get list of unique train codes
     """
-    try:
-        # Use raw SQL to ensure we get distinct train codes
-        result = db.execute(text("SELECT DISTINCT train_code FROM train_connections"))
-        unique_trains = [row[0] for row in result]
-        
-        print(f"Unique trains found: {unique_trains}")  # Debug print
-        
-        if not unique_trains:
-            raise HTTPException(status_code=404, detail="No train codes found")
-        
-        return unique_trains
-    except Exception as e:
-        print(f"Error fetching unique trains: {e}")  # More detailed error logging
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    result = db.execute(text("SELECT DISTINCT train_code FROM train_connections"))
+    unique_trains = [row[0] for row in result]
     
+    if not unique_trains:
+        raise HTTPException(status_code=404, detail="No train codes found")
     
-    
+    return unique_trains
+
 @app.get("/full-price-history", response_model=List[TrainConnectionResponse])
 def get_full_price_history(
-    train_code: str = None,  # Optional parameter to filter by specific train
+    train_code: str = None,
     db: Session = Depends(get_db)
 ):
     """
     Retrieve full price history for all or specific train(s)
-    
-    Parameters:
-    - train_code: Optional. Filter history for a specific train
     """
-    try:
-        # Base query for all train connections
-        query = db.query(TrainConnection)
-        
-        # Optional train code filtering
-        if train_code:
-            query = query.filter(TrainConnection.train_code == train_code)
-        
-        # Order by timestamp to ensure chronological order
-        price_history = query.order_by(TrainConnection.scrape_timestamp).all()
-        
-        print(f"Full price history retrieved: {len(price_history)} entries")
-        
-        if not price_history:
-            raise HTTPException(status_code=404, detail="No price history found")
-        
-        return price_history
-    except Exception as e:
-        print(f"Error retrieving full price history: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    query = db.query(TrainConnection)
     
+    if train_code:
+        query = query.filter(TrainConnection.train_code == train_code)
     
+    price_history = query.order_by(TrainConnection.scrape_timestamp).all()
     
+    if not price_history:
+        raise HTTPException(status_code=404, detail="No price history found")
     
-    
+    return price_history
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

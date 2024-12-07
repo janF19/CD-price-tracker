@@ -1,0 +1,28 @@
+
+
+train_prices.db
+
+.scraping.py
+
+
+# dependencies
+train-price-frontend/node_modules
+train-price-frontend/.pnp
+train-price-frontend.pnp.js
+
+# testing
+train-price-frontend/coverage
+
+# production
+train-price-frontend/build
+
+# misc
+train-price-frontend/.DS_Store
+train-price-frontend/.env.local
+train-price-frontend/.env.development.local
+train-price-frontend/.env.test.local
+train-price-frontend/.env.production.local
+
+train-price-frontend/npm-debug.log*
+train-price-frontend/yarn-debug.log*
+train-price-frontend/yarn-error.log*

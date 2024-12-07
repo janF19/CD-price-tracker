@@ -233,5 +233,8 @@ def get_full_price_history(
     
     return price_history
 
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Get the dynamic port assigned by Render (default to 8000 if missing for local development)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -2,6 +2,8 @@
 
 train_prices.db
 
+./__pycache__
+
 .scraping.py
 
 #frontend

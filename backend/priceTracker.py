@@ -107,7 +107,7 @@ class TrainPriceTracker:
         self.engine = engine
         self.SessionLocal = SessionLocal
         
-        self.timezone = pytz.timezone('Eurpoe/Prague')
+        self.timezone = pytz.timezone('Europe/Prague')
         
 
     def save_connections_to_db(self, connections):

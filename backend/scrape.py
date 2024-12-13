@@ -81,7 +81,7 @@ def automate_train_search():
         # More robust date and time input
         date_input = wait.until(EC.presence_of_element_located((By.ID, "depDate")))
         date_input.clear()
-        date_input.send_keys("13.12.2024")
+        date_input.send_keys("20.12.2024")
         
         time_input = wait.until(EC.presence_of_element_located((By.ID, "timePickerObj")))
         time_input.clear()

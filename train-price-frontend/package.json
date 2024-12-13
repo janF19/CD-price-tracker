@@ -11,6 +11,7 @@
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
     "recharts": "^2.14.1",
+    "train-price-frontend": "file:",
     "web-vitals": "^4.2.4"
   },
   "scripts": {

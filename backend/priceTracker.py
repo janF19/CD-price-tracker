@@ -20,7 +20,9 @@ import psycopg2
 from urllib.parse import urlparse, quote_plus
 from sqlalchemy.exc import SQLAlchemyError
 from urllib.parse import quote_plus
-
+from apscheduler.triggers.cron import CronTrigger
+from datetime import datetime, timedelta
+import pytz
 
 
 # Load environment variables
@@ -31,8 +33,7 @@ load_dotenv()
 # Manually parse the DATABASE_URL
 
 
-# Load environment variables
-load_dotenv()
+
 
 # Database connection URL
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -105,13 +106,16 @@ class TrainPriceTracker:
     def __init__(self):
         self.engine = engine
         self.SessionLocal = SessionLocal
+        
+        self.timezone = pytz.timezone('Eurpoe/Prague')
+        
 
     def save_connections_to_db(self, connections):
         if not connections:
             print("No connections to save.")
             return
 
-        timestamp = datetime.now()
+        timestamp = datetime.now(self.timezone)
         with self.SessionLocal() as session:
             for connection in connections:
                 train_connection = TrainConnection(
@@ -136,15 +140,22 @@ class TrainPriceTracker:
                 print("No connections retrieved from scraping.")
         except Exception as e:
             print(f"Error in scraping and saving: {e}")
+            traceback.print_exc()
 
     def start_scheduler(self):
-        scheduler = BlockingScheduler()
+        scheduler = BlockingScheduler(timezone = self.timezone)
         
-        # Run immediately once
-        self.run_scrape_and_save()
+        scheduler.add_job(
+            self.run_scrape_and_save,
+            CronTrigger(hour = 8, minute=0),
+            id='morning_train_price_scraper'
+        )
         
-        # Then schedule subsequent runs
-        scheduler.add_job(self.run_scrape_and_save, 'interval', hours=24)
+        scheduler.add_job(
+            self.run_scrape_and_save, 
+            CronTrigger(hour=18, minute=0),
+            id='evening_train_price_scraper'
+        )
         
         try:
             print("Scheduler started. Press Ctrl+C to exit.")

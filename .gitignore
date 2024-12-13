@@ -6,6 +6,7 @@ backend/__pycache__/
 
 backend/scraping.py
 database-script.py
+conect.py
 #frontend
 # dependencies
 train-price-frontend/node_modules

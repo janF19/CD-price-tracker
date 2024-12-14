@@ -10,7 +10,7 @@ from typing import List
 from datetime import datetime
 import uvicorn
 from scrape import automate_train_search  # Your existing scraper
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from threading import Thread
 from dotenv import load_dotenv
 import psycopg2
@@ -23,14 +23,14 @@ from urllib.parse import quote_plus
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime, timedelta
 import pytz
+from contextlib import asynccontextmanager
 
 
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
-# Get the DATABASE_URL
-# Manually parse the DATABASE_URL
+
 
 
 
@@ -89,24 +89,14 @@ def get_db():
     finally:
         db.close()
 
-# FastAPI application
-app = FastAPI(title="Train Price Tracker API")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Scheduler Integration
 class TrainPriceTracker:
     def __init__(self):
         self.engine = engine
         self.SessionLocal = SessionLocal
-        
+        self.scheduler = None
         self.timezone = pytz.timezone('Europe/Prague')
         
 
@@ -130,6 +120,7 @@ class TrainPriceTracker:
         print(f"Saved {len(connections)} connections to database")
 
     def run_scrape_and_save(self):
+        print(f"Scheduled job started at {datetime.now(self.timezone)}")
         try:
             connections = automate_train_search()
             print(f"Connections retrieved: {len(connections)}")
@@ -143,15 +134,15 @@ class TrainPriceTracker:
             traceback.print_exc()
 
     def start_scheduler(self):
-        scheduler = BlockingScheduler(timezone = self.timezone)
+        self.scheduler = BackgroundScheduler(timezone = self.timezone)
         
-        scheduler.add_job(
+        self.scheduler.add_job(
             self.run_scrape_and_save,
             CronTrigger(hour = 8, minute=0),
             id='morning_train_price_scraper'
         )
         
-        scheduler.add_job(
+        self.scheduler.add_job(
             self.run_scrape_and_save, 
             CronTrigger(hour=18, minute=0),
             id='evening_train_price_scraper'
@@ -159,19 +150,43 @@ class TrainPriceTracker:
         
         try:
             print("Scheduler started. Press Ctrl+C to exit.")
-            scheduler.start()
+            self.scheduler.start()
         except (KeyboardInterrupt, SystemExit):
             print("\nScheduler stopped.")
 
-# Start scheduler in a separate thread
-def start_scheduler_thread():
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    print("Starting scheduler...")
     tracker = TrainPriceTracker()
     scheduler_thread = Thread(target=tracker.start_scheduler)
+    scheduler_thread.daemon = True  # Ensure thread doesn't block app shutdown
     scheduler_thread.start()
+    print("Scheduler thread started.")
+    
+    yield  # This is where the application runs
+    
+    # Shutdown logic (optional)
+    print("Shutting down scheduler...")
+    # Add any cleanup code if needed
+    
+# FastAPI application
+app = FastAPI(
+    title="Train Price Tracker API",
+    lifespan=lifespan
+)
 
-@app.on_event("startup")
-async def startup_event():
-    start_scheduler_thread()
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/train-prices", response_model=List[TrainConnectionResponse])
 def get_train_prices(

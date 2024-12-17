@@ -22,8 +22,15 @@ def clean_price(price_text):
     """
     Extract just the price value
     """
-    match = re.search(r'(\d+)\s*Kč', price_text)
-    return float(match.group(1)) if match else 0.0
+    
+    if price_text == 'N/A':
+        return 0.0  # Return 0.0 for 'N/A'
+    
+    return float(price_text)
+
+
+    # match = re.search(r'(\d+)\s*Kč', price_text)
+    # return match.group(1) if match else 0.0
 
 def scrape_train_connections(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')

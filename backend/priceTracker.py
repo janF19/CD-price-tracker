@@ -98,6 +98,8 @@ class TrainPriceTracker:
         self.SessionLocal = SessionLocal
         self.scheduler = None
         self.timezone = pytz.timezone('Europe/Prague')
+        print(f"Initialized with timezone: {self.timezone}")
+        print(f"Current time in timezone: {datetime.now(self.timezone)}")
         
 
     def save_connections_to_db(self, connections):
@@ -136,12 +138,16 @@ class TrainPriceTracker:
     def start_scheduler(self):
         self.scheduler = BackgroundScheduler(timezone = self.timezone)
         
+        self.run_scrape_and_save()
+        
+        print(f"Adding morning job for {self.timezone}")
         self.scheduler.add_job(
             self.run_scrape_and_save,
             CronTrigger(hour = 8, minute=0),
             id='morning_train_price_scraper'
         )
         
+        print(f"Adding evening job for {self.timezone}")
         self.scheduler.add_job(
             self.run_scrape_and_save, 
             CronTrigger(hour=18, minute=0),
@@ -151,26 +157,35 @@ class TrainPriceTracker:
         try:
             print("Scheduler started. Press Ctrl+C to exit.")
             self.scheduler.start()
+            print("Scheduler started successfully")
         except (KeyboardInterrupt, SystemExit):
             print("\nScheduler stopped.")
+        except Exception as e:
+            print(f"Error starting scheduler: {e}")
+            traceback.print_exc()
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup logic
-    print("Starting scheduler...")
-    tracker = TrainPriceTracker()
-    scheduler_thread = Thread(target=tracker.start_scheduler)
-    scheduler_thread.daemon = True  # Ensure thread doesn't block app shutdown
-    scheduler_thread.start()
-    print("Scheduler thread started.")
-    
-    yield  # This is where the application runs
-    
-    # Shutdown logic (optional)
-    print("Shutting down scheduler...")
-    # Add any cleanup code if needed
+    try:
+        print("Starting scheduler...")
+        tracker = TrainPriceTracker()
+        scheduler_thread = Thread(target=tracker.start_scheduler)
+        scheduler_thread.daemon = True
+        scheduler_thread.start()
+        print("Scheduler thread started.")
+        
+        yield
+    except Exception as e:
+        print(f"Error in scheduler: {e}")
+        traceback.print_exc()
+        raise
+    finally:
+        print("Shutting down scheduler...")
+        # Add cleanup code
+        if tracker and tracker.scheduler:
+            tracker.scheduler.shutdown()
     
 # FastAPI application
 app = FastAPI(

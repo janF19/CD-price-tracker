@@ -23,7 +23,7 @@ def clean_price(price_text):
     Extract just the price value
     """
     match = re.search(r'(\d+)\s*Kč', price_text)
-    return float(match.group(1)) if match else price_text
+    return float(match.group(1)) if match else 0.0
 
 def scrape_train_connections(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -76,7 +76,7 @@ def scrape_train_connections(html_content):
     
     return connections
 
-def save_connections_to_csv(connections, filename='train_connections2.csv'):
+def save_connections_to_csv(connections, filename='train_connections3.csv'):
     """
     Save connection details to a CSV file.
     

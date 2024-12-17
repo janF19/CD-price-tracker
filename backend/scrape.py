@@ -125,3 +125,9 @@ def automate_train_search():
     finally:
         # Always close the browser, regardless of success or failure
         driver.quit()
+        
+
+
+if __name__ == "__main__":
+    connections = automate_train_search()
+    print(connections)  

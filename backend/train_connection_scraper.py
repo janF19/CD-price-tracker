@@ -23,7 +23,7 @@ def clean_price(price_text):
     Extract just the price value
     """
     match = re.search(r'(\d+)\s*Kč', price_text)
-    return match.group(1) if match else price_text
+    return float(match.group(1)) if match else price_text
 
 def scrape_train_connections(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -49,12 +49,14 @@ def scrape_train_connections(html_content):
             if price_button and price_button.find('span'):
                 # Remove non-numeric characters and additional text
                 price_text = price_button.find('span').text.strip()
+                print(f"this is initial price text when ecraped {price_text}")
                 price = ''.join(char for char in price_text if char.isdigit() or char == ' ')
                 price = price.split()[0] if price.split() else 'N/A'
             else:
                 price = 'N/A'
                 
             price = clean_price(price)
+            print(f"this is {price} for train")
                 
             #clean train code name
             train_code_name = clean_train_code(train_code_name)

@@ -38,6 +38,10 @@ load_dotenv()
 # Uncomment PostgreSQL configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+# Convert postgres:// to postgresql:// if necessary
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Create Base and engine
 Base = declarative_base()
 
@@ -52,7 +56,10 @@ engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
     pool_recycle=3600,
-    connect_args={'options': '-c client_encoding=utf8'}
+    connect_args={
+        'options': '-c client_encoding=utf8',
+        'sslmode': 'require'
+    }
 )
 
 # Create SessionLocal 

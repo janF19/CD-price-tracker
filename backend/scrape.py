@@ -93,7 +93,7 @@ def automate_train_search():
             try:
                 to_station = wait.until(EC.presence_of_element_located(strategy))
                 to_station.clear()
-                to_station.send_keys("Opava východ")
+                to_station.send_keys("Ostrava-Svinov")
                 time.sleep(random.uniform(0.5, 1.5))
                 to_station.send_keys(Keys.TAB)
                 break

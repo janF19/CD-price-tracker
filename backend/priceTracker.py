@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 import uvicorn
-from scrape import automate_train_search  # Your existing scraper
+from scrape import automate_train_search  # existing scraper
 from apscheduler.schedulers.background import BackgroundScheduler
 from threading import Thread
 from dotenv import load_dotenv
@@ -31,15 +31,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
-
-
-
 # Database connection URL
+# Comment out SQLite configuration
+# DATABASE_URL = "sqlite:///./train_prices.db"
+
+# Uncomment PostgreSQL configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Create Base and engine
 Base = declarative_base()
+
+# Comment out SQLite engine configuration
+# engine = create_engine(
+#     DATABASE_URL,
+#     connect_args={"check_same_thread": False}  # Required for SQLite
+# )
+
+# Uncomment PostgreSQL engine configuration
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
@@ -127,7 +135,16 @@ class TrainPriceTracker:
             connections = automate_train_search()
             print(f"Connections retrieved: {len(connections)}")
             
+            # Add detailed connection printing
             if connections:
+                print("\nRetrieved connections:")
+                for conn in connections:
+                    print(f"Train: {conn.get('Train Code', 'N/A')} | "
+                          f"Departure: {conn.get('Departure Time', 'N/A')} | "
+                          f"Station: {conn.get('Departure Station', 'N/A')} | "
+                          f"Price: {conn.get('Price', 'N/A')} CZK")
+                print("\n")
+                
                 self.save_connections_to_db(connections)
             else:
                 print("No connections retrieved from scraping.")
@@ -276,6 +293,9 @@ def get_full_price_history(
 
 
 if __name__ == "__main__":
-    # Get the dynamic port assigned by Render (default to 8000 if missing for local development)
+    # Comment out local development configuration
+    # uvicorn.run(app, host="127.0.0.1", port=8000)
+    
+    # Uncomment Production configuration
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)

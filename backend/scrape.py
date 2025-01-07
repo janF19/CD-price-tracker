@@ -7,6 +7,31 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from train_connection_scraper import scrape_train_connections
 import time
 import random
+from datetime import datetime, timedelta
+import os
+
+def get_target_date():
+    # Read the date from file or create initial date if file doesn't exist
+    date_file = 'target_date.txt'
+    
+    if not os.path.exists(date_file):
+        # Initialize with 20.12.2024 as the starting date
+        initial_date = datetime.strptime('10.1.2025', '%d.%m.%Y')
+        with open(date_file, 'w') as f:
+            f.write(initial_date.strftime('%d.%m.%Y'))
+        return initial_date
+    
+    with open(date_file, 'r') as f:
+        current_date = datetime.strptime(f.read().strip(), '%d.%m.%Y')
+    
+    # Check if it's Friday and we need to update the date
+    if datetime.now().weekday() == 4:  # Friday is 4
+        new_date = current_date + timedelta(days=7)
+        with open(date_file, 'w') as f:
+            f.write(new_date.strftime('%d.%m.%Y'))
+        return new_date
+    
+    return current_date
 
 def automate_train_search():
     options = webdriver.ChromeOptions()
@@ -78,14 +103,15 @@ def automate_train_search():
         if not to_station:
             raise Exception("Could not locate arrival station input")
         
-        # More robust date and time input
+        # Replace hardcoded date with dynamic date
+        target_date = get_target_date()
         date_input = wait.until(EC.presence_of_element_located((By.ID, "depDate")))
         date_input.clear()
-        date_input.send_keys("20.12.2024")
+        date_input.send_keys(target_date.strftime('%d.%m.%Y'))
         
         time_input = wait.until(EC.presence_of_element_located((By.ID, "timePickerObj")))
         time_input.clear()
-        time_input.send_keys("18:20")
+        time_input.send_keys("13:20")
         
         # Enhanced search button handling
         search_strategies = [

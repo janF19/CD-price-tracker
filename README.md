@@ -4,7 +4,7 @@ A web application that tracks and visualizes price changes for trains running be
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://cd-price-tracker-1.onrender.com/)
 
-![CD Price Tracker Preview](docs/preview.png)
+![CD Price Tracker Preview](docs/image.png)
 
 ## Overview 🚂
 

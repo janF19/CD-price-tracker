@@ -2,6 +2,10 @@
 
 A web application that tracks and visualizes price changes for trains running between Prague and Ostrava Svinov on the Czech Railways (České dráhy) network. The system performs automated price scraping twice daily to analyze how train ticket prices fluctuate over time, providing insights into pricing patterns and variations between different trains and weeks.
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://cd-price-tracker-1.onrender.com/)
+
+![CD Price Tracker Preview](docs/preview.png)
+
 ## Overview 🚂
 
 This project monitors train ticket prices specifically for Friday departures from Prague to Ostrava Svinov after 13:20. By collecting price data twice daily (8 AM and 6 PM) starting one week before each Friday, the application enables users to:

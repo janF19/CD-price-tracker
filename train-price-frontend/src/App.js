@@ -23,6 +23,13 @@ const TrainPriceHistoryChart = () => {
         
         // Fetch full price history
         const priceHistoryResponse = await axios.get('https://cd-price-tracker.onrender.com/full-price-history');
+        console.log('Raw API Response:', priceHistoryResponse.data);
+        // Example output:
+        // [
+        //   { train_code: "123", price: "199.00", scrape_timestamp: "2024-03-20T14:30:00Z" },
+        //   { train_code: "123", price: "220.00", scrape_timestamp: "2024-03-21T14:30:00Z" },
+        //   { train_code: "456", price: "150.00", scrape_timestamp: "2024-03-20T14:30:00Z" }
+        // ]
         
         // Group data by train
         const groupedData = priceHistoryResponse.data.reduce((acc, entry) => {
@@ -46,6 +53,24 @@ const TrainPriceHistoryChart = () => {
           trainCode,
           entries: entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
         }));
+
+        console.log('Processed Data:', processedData);
+        // Example output:
+        // [
+        //   {
+        //     trainCode: "123",
+        //     entries: [
+        //       { trainCode: "123", price: 199.00, timestamp: "3/20/2024, 2:30:00 PM" },
+        //       { trainCode: "123", price: 220.00, timestamp: "3/21/2024, 2:30:00 PM" }
+        //     ]
+        //   },
+        //   {
+        //     trainCode: "456",
+        //     entries: [
+        //       { trainCode: "456", price: 150.00, timestamp: "3/20/2024, 2:30:00 PM" }
+        //     ]
+        //   }
+        // ]
 
         setTrainData(processedData);
         
@@ -111,58 +136,91 @@ const TrainPriceHistoryChart = () => {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Train Price History</h1>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-5xl font-extrabold text-gray-900 mb-12 text-center tracking-tight">
+          Train Price History
+        </h1>
 
-      {/* Train Selection Dropdown */}
-      <div className="mb-4">
-        <label htmlFor="train-select" className="mr-2">Select Train:</label>
-        <select 
-          id="train-select"
-          value={selectedTrain || ''}
-          onChange={(e) => setSelectedTrain(e.target.value)}
-          className="p-2 border rounded"
-        >
-          {trainData.map(train => (
-            <option key={train.trainCode} value={train.trainCode}>
-              {train.trainCode}
-            </option>
-          ))}
-        </select>
+        <div className="mb-8 bg-white p-8 rounded-lg shadow-sm">
+          <label htmlFor="train-select" className="block text-lg font-medium text-gray-700 mb-3">
+            Select Train:
+          </label>
+          <select 
+            id="train-select"
+            value={selectedTrain || ''}
+            onChange={(e) => setSelectedTrain(e.target.value)}
+            className="w-full md:w-auto px-6 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+          >
+            {trainData.map(train => (
+              <option key={train.trainCode} value={train.trainCode}>
+                {train.trainCode}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Price History Chart */}
+        {chartData && (
+          <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <div className="h-[500px] w-full">
+              <Line data={chartData} options={chartOptions} />
+            </div>
+          </div>
+        )}
+
+        {/* Detailed Price Table */}
+        {selectedTrainData && (
+          <div className="bg-white p-8 rounded-xl shadow-lg">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 border-b pb-4">
+              Price History Details
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-100 border-b border-gray-200">
+                    <th className="px-8 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider w-1/2">
+                      Timestamp
+                    </th>
+                    <th className="px-8 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider w-1/2">
+                      Price (CZK)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTrainData.entries.map((entry, index) => (
+                    <tr 
+                      key={index}
+                      className="border-b border-gray-100 hover:bg-blue-50 transition-colors duration-150"
+                    >
+                      <td className="px-8 py-4">
+                        <div className="text-base font-medium text-gray-800">
+                          {entry.timestamp}
+                        </div>
+                      </td>
+                      <td className="px-8 py-4">
+                        <div className="text-base font-semibold text-blue-600">
+                          {entry.price.toFixed(2)} CZK
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Total Records Card */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex justify-between items-center px-4">
+                <span className="text-base font-medium text-gray-600">Total Records:</span>
+                <span className="text-base font-bold text-gray-900">
+                  {selectedTrainData.entries.length}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Price History Chart */}
-      {chartData && (
-        <div className="h-[500px] w-full mb-4">
-          <Line data={chartData} options={chartOptions} />
-        </div>
-      )}
-
-      {/* Detailed Price Table */}
-      {selectedTrainData && (
-        <div className="mt-4">
-          <h2 className="text-xl font-bold mb-4">Price History Details</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">Timestamp</th>
-                <th className="border p-2">Price (CZK)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedTrainData.entries.map((entry, index) => (
-                <tr 
-                  key={index} 
-                  className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-                >
-                  <td className="border p-2">{entry.timestamp}</td>
-                  <td className="border p-2">{entry.price.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 };
